@@ -1,1 +1,1 @@
-# special-happiness
+# Word Search solver created with python using tkinter library
