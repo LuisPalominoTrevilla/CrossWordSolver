@@ -1,1 +1,2 @@
-# Word Search solver created with python using tkinter library
+# Added exceptions that were missing
+# Renamed function and classes names
