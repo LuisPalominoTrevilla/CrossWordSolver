@@ -64,12 +64,22 @@ class WordSearchSolver:
                 self.crossWordEntries[i][j].bind("<Leave>", self.make_upper)
                 self.crossWordEntries[i][j].bind("<FocusOut>", self.make_upper)
                 self.crossWordEntries[i][j].grid(row=i, column=j)
-        frameAux= Frame(master)
+
+        frameAux = Frame(master)
         frameAux.grid(row=1, column=0)
-        Label(frameAux, text='Or use a text file instead...').grid(row=0, column=0, columnspan=self.columns)
-        Button(frameAux, text='Create new text file', command=self.input_word_puzzle).grid(row=1, column=0, columnspan=self.columns)
-        Button(frameAux, text='Load file to solver', command=self.load_word_puzzle_file).grid(row=2, column=0, columnspan=self.columns)
-        Button(frameAux, text='Delete all Cells', command=self.delete_grid).grid(row=3, column=0, columnspan=self.columns)
+        # Use file to create word puzzle
+
+        Label(frameAux, text='Or use a text file instead...').grid(row=0, column=0,  columnspan=self.columns//2)
+        Button(frameAux, text='Create new text file', command=self.input_word_puzzle).grid(row=1, column=0,  columnspan=self.columns//2)
+        Button(frameAux, text='Load file to solver', command=self.load_word_puzzle_file).grid(row=2, column=0,  columnspan=self.columns//2)
+        Button(frameAux, text='Delete all Cells', command=self.delete_grid).grid(row=3, column=0,  columnspan=self.columns//2)
+
+        # Use image to create word puzzle
+        Label(frameAux, text='Or upload an image instead...').grid(row=0, column=self.columns//2, columnspan=self.columns//2)
+        Label(frameAux, text='Image name (with filename extension)').grid(row=1, column=self.columns//2, columnspan=self.columns // 2)
+        self.img_name = Entry(frameAux)
+        self.img_name.grid(row=2, column=self.columns//2, columnspan=self.columns//2)
+        Button(frameAux, text='Upload', command=self.upload_image).grid(row=3, column=self.columns//2, columnspan=self.columns//2)
 
         # Create entries for words
         frame2 = Frame(master, padx=10, pady=10)
@@ -90,8 +100,12 @@ class WordSearchSolver:
             f = open('wordPuzzle.txt', 'w')
             f.write("# Please Ignore these lines of text:\n# Start by typing the wordPuzzle after these lines!\n# Don't use numbers or leave empty spaces!\n# Make sure you save the file before you upload it to the solver")
             f.close()
+            '''
             import webbrowser
             webbrowser.open("wordPuzzle.txt")
+            '''
+            import os
+            os.startfile('wordPuzzle.txt')
 
     def load_word_puzzle_file(self):
         lines = ""
@@ -116,6 +130,46 @@ class WordSearchSolver:
         else:
             messagebox.showerror(title='OOPS...', message='The file seems to be empty...\nMake sure there are no empty lines on the file after the comments\nMake sure you save your file before you close it')
         f.close()
+
+    def upload_image(self):
+        if self.img_name.get() != '':
+            try:
+                from PIL import Image
+                import pytesseract
+                inconsistencies = []  # List where we have inconsistencies
+                file_name = self.img_name.get()
+                img_file = Image.open(file_name)
+                raw_words = pytesseract.image_to_string(img_file, lang='eng').split('\n')
+                img_words = []  # List containing rows of uppercase words
+                r = 1
+
+                for i in range(len(raw_words)):
+                    if raw_words[i] != "":
+                        img_words.append(raw_words[i].replace(" ", ""))
+                        if len(raw_words[i].replace(" ", "")) != self.columns and r <= self.rows:
+                            inconsistencies.append(r)
+                        r += 1
+
+                for i in range(self.rows):
+                    for j in range(self.columns):
+                        self.crossWordEntries[i][j].delete(0, END)
+                        try:
+                            if not img_words[i][j].isdigit():
+                                self.crossWordEntries[i][j].insert(0, img_words[i][j].upper())
+                        except IndexError:
+                            pass
+
+                if len(inconsistencies) != 0:
+                    message = 'There were some inconsistencies on rows'
+                    for row in inconsistencies:
+                        message += '\n'
+                        message += str(row)
+                    messagebox.showwarning(title='Inconsistencies', message=message)
+
+            except FileNotFoundError:
+                messagebox.showerror(title='File not found', message='The file was not found! Make sure it is in the respective directory')
+        else:
+            messagebox.showwarning(title='No filename given', message='Please enter a file name before uploading')
 
     def delete_grid(self):
         """
@@ -180,6 +234,12 @@ class WordSearchSolver:
                                 is_word_found = True
                                 break
                             if self.check_left(row, column, word):
+                                is_word_found = True
+                                break
+                            if self.check_up(row, column, word):
+                                is_word_found = True
+                                break
+                            if self.check_down(row, column, word):
                                 is_word_found = True
                                 break
                     if is_word_found:
@@ -254,6 +314,62 @@ class WordSearchSolver:
             if self.crossWordEntries[row][i].get() == word[aux]:
                 word_compare += self.crossWordEntries[row][i].get()
                 self.colorCells.append([row, i])
+                aux += 1
+                if word_compare == word:
+                    self.color_word()
+                    return True
+            else:
+                self.colorCells = []
+                return False
+        self.colorCells = []
+        return False
+
+    def check_up(self, row, column, word):
+        """
+        :param row: the row index were the first character was found
+        :param column: the column index were the first character was found
+        :param word: The word we want to search for
+        :return: True if the word is found by searching up/False if not found
+        """
+        aux = 1
+        print(row)
+        self.colorCells.append([row, column])
+        word_compare = self.crossWordEntries[row][column].get()
+        if word_compare == word:
+            self.color_word()
+            return True
+        for i in range(row - 1, -1, -1):
+            if self.crossWordEntries[i][column].get() == word[aux]:
+                word_compare += self.crossWordEntries[i][column].get()
+                self.colorCells.append([i, column])
+                aux += 1
+                if word_compare == word:
+                    self.color_word()
+                    return True
+            else:
+                self.colorCells = []
+                return False
+        self.colorCells = []
+        return False
+
+    def check_down(self, row, column, word):
+        """
+        :param row: the row index were the first character was found
+        :param column: the column index were the first character was found
+        :param word: The word we want to search for
+        :return: True if the word is found by searching down/False if not found
+        """
+        aux = 1
+        print(row)
+        self.colorCells.append([row, column])
+        word_compare = self.crossWordEntries[row][column].get()
+        if word_compare == word:
+            self.color_word()
+            return True
+        for i in range(row + 1, self.rows):
+            if self.crossWordEntries[i][column].get() == word[aux]:
+                word_compare += self.crossWordEntries[i][column].get()
+                self.colorCells.append([i, column])
                 aux += 1
                 if word_compare == word:
                     self.color_word()
