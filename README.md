@@ -3,4 +3,5 @@
 # When the word is not found, a message shows up
 # Added option to upload image as word puzzle
 # Finished the search algorithm
+# Added buttons to add more words or remove them
 
