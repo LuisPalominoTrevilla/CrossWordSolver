@@ -8,12 +8,13 @@ from tkinter import messagebox
 
 
 class MyWindow:
-    myLabels = []
-    buttons = []
-    myEntries = {}
-    rows, columns, numwords = 0, 0, 0
 
     def __init__(self, master):
+        self.myLabels = []
+        self.buttons = []
+        self.myEntries = {}
+        self.rows, self.columns, self.numwords = 0, 0, 0
+
         self.myLabels.append(Label(master, text="Rows:"))
         self.myLabels.append(Label(master, text="Columns:"))
         self.myLabels.append(Label(master, text="Number of words:"))
@@ -35,20 +36,25 @@ class MyWindow:
         self.columns = self.myEntries['col'].get()
         self.numwords = self.myEntries['words'].get()
         try:
-            self.rows = int(self.rows)
-            self.columns = int(self.columns)
-            self.numwords = int(self.numwords)
-            for i in self.myLabels:
-                i.grid_forget()
-            for j in self.buttons:
-                j.grid_forget()
-            for k in self.myEntries.values():
-                k.grid_forget()
-            WordSearchSolver(root, self.rows, self.columns, self.numwords)
-        except ValueError:
-            messagebox.showwarning(title='WARNING!', message='Please enter numbers only')
-            for i in self.myEntries.values():
-                i.delete(0, END)
+            assert int(self.rows) >= 4 and int(self.columns) >= 4
+        except AssertionError:
+            messagebox.showwarning(title='Invalid values', message='The minimum size of the grid must be 4 x 4')
+        else:
+            try:
+                self.rows = int(self.rows)
+                self.columns = int(self.columns)
+                self.numwords = int(self.numwords)
+                for i in self.myLabels:
+                    i.grid_forget()
+                for j in self.buttons:
+                    j.grid_forget()
+                for k in self.myEntries.values():
+                    k.grid_forget()
+                WordSearchSolver(root, self.rows, self.columns, self.numwords)
+            except ValueError:
+                messagebox.showwarning(title='WARNING!', message='Please enter numbers only')
+                for i in self.myEntries.values():
+                    i.delete(0, END)
 
 
 class WordSearchSolver:
@@ -93,18 +99,54 @@ class WordSearchSolver:
                                                                         columnspan=self.columns // 2)
 
         # Create entries for words
-        frame2 = Frame(master, padx=10, pady=10)
-        frame2.grid(row=0, column=1)
-        Label(frame2, text="Words to search for:", justify='center').grid(row=0, column=0, columnspan=2)
+        self.frame2 = Frame(master, padx=10, pady=10)
+        self.frame2.grid(row=0, column=1)
+        Label(self.frame2, text="Words to search for:", justify='center').grid(row=0, column=0, columnspan=2)
+        Button(self.frame2, text='Add new word', justify='center', command=self.add_new_word).grid(row=1, column=0)
+        Button(self.frame2, text='Remove word', justify='center', command=self.remove_word).grid(row=1, column=1)
+        self.word_labels = []
         for i in range(numwords):
-            Label(frame2, text="Word " + str(i + 1) + ":").grid(row=i + 1, column=0)
-            self.wordsEntries.append(Entry(frame2, text="", justify='center'))
+            self.word_labels.append(Label(self.frame2, text="Word " + str(i + 1) + ":"))
+            self.word_labels[i].grid(row=i + 2, column=0)
+            self.wordsEntries.append(Entry(self.frame2, justify='center'))
             self.wordsEntries[i].bind("<Leave>", self.check_if_number)
             self.wordsEntries[i].bind("<FocusOut>", self.check_if_number)
-            self.wordsEntries[i].grid(row=i + 1, column=1)
-        btn_Search = Button(frame2, text='Begin Search', width=12, command=self.search_algorithm)
-        btn_Search.grid(row=i + 2, column=1)
+            self.wordsEntries[i].grid(row=i + 2, column=1)
+        self.btn_Search = Button(self.frame2, text='Begin Search', width=12, command=self.search_algorithm)
+        self.btn_Search.grid(row=i + 3, column=1)
+
+        # What happens when window is closed
         master.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def add_new_word(self):
+        """
+        Adds a new entry to search a word
+        """
+        self.word_labels.append(Label(self.frame2, text="Word " + str(self.numwords + 1) + ":"))
+        self.word_labels[self.numwords].grid(row=self.numwords + 2, column=0)
+        self.wordsEntries.append(Entry(self.frame2, justify='center'))
+        self.wordsEntries[self.numwords].bind("<Leave>", self.check_if_number)
+        self.wordsEntries[self.numwords].bind("<FocusOut>", self.check_if_number)
+        self.wordsEntries[self.numwords].grid(row=self.numwords + 2, column=1)
+        self.btn_Search.grid(row=self.numwords + 3, column=1)
+        self.numwords += 1
+
+    def remove_word(self):
+        """
+        Removes an entry
+        """
+        try:
+            if len(self.wordsEntries) == 1:
+                raise IndexError
+            else:
+                self.wordsEntries[self.numwords-1].grid_forget()
+                del(self.wordsEntries[self.numwords-1])
+                self.word_labels[self.numwords - 1].grid_forget()
+                del (self.word_labels[self.numwords - 1])
+                self.btn_Search.grid(row=self.numwords + 2, column=1)
+                self.numwords -= 1
+        except IndexError:
+            messagebox.showwarning(title='Warning', message='You cannot delete more words!')
 
     def input_word_puzzle(self):
         if messagebox.askquestion(title='CONTINUE?', message='Are you sure you want to create a new file?') == 'yes':
