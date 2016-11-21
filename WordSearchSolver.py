@@ -10,6 +10,7 @@ from tkinter import messagebox
 class MyWindow:
 
     def __init__(self, master):
+        master.title('WordSearch Solver')
         self.myLabels = []
         self.buttons = []
         self.myEntries = {}
@@ -35,15 +36,16 @@ class MyWindow:
         self.rows = self.myEntries['row'].get()
         self.columns = self.myEntries['col'].get()
         self.numwords = self.myEntries['words'].get()
+
         try:
-            assert int(self.rows) >= 4 and int(self.columns) >= 4
-        except AssertionError:
-            messagebox.showwarning(title='Invalid values', message='The minimum size of the grid must be 4 x 4')
-        else:
+            self.rows = int(self.rows)
+            self.columns = int(self.columns)
+            self.numwords = int(self.numwords)
             try:
-                self.rows = int(self.rows)
-                self.columns = int(self.columns)
-                self.numwords = int(self.numwords)
+                assert self.rows >= 4 and self.columns >= 4 and self.numwords >= 1
+            except AssertionError:
+                messagebox.showwarning(title='Invalid values', message='The minimum size of the grid must be 4 x 4 and the minimum number of words must be 1')
+            else:
                 for i in self.myLabels:
                     i.grid_forget()
                 for j in self.buttons:
@@ -51,15 +53,15 @@ class MyWindow:
                 for k in self.myEntries.values():
                     k.grid_forget()
                 WordSearchSolver(root, self.rows, self.columns, self.numwords)
-            except ValueError:
-                messagebox.showwarning(title='WARNING!', message='Please enter numbers only')
-                for i in self.myEntries.values():
-                    i.delete(0, END)
+        except ValueError:
+            messagebox.showwarning(title='WARNING!', message='Please enter numbers only')
+            for i in self.myEntries.values():
+                i.delete(0, END)
 
 
 class WordSearchSolver:
     def __init__(self, master, rows, columns, numwords):
-        master.title('WordSearch Solver v. 0.0.1')
+        master.title('WordSearch Solver')
         frame = Frame(master, padx=10, pady=2)
         frame.grid(row=0, column=0)
         self.crossWordEntries = [[] for j in range(rows)]  # Entries of the word search grid
